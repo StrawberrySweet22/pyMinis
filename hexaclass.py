@@ -14,39 +14,56 @@ class Line:
 		self._slope = slope
 		self._point = point
 		self._intercept = intercept
+		
 		try:
 			self.is_valid_line()
 		except:
 			print("Not Enough Data To Construct a Line")
 			raise
 		self.set_intercept()
-		self.set_pont()
+		self.set_point()
 
 	def is_valid_line(self):
 		if(not(self._point) and not(self._intercept)):
 			raise NameError('LineError')
 		if(self.is_vertical()):
-			if(not(point)):
+			if(not(self._point)):
 				raise ('LineError')
 
 	def is_vertical(self):
-		if(slope == 'inf'):
+		if(self._slope == 'inf'):
 			return True
 		else:
 			return False
 
 	def set_intercept(self):                
 		if(self._intercept):
-			self._intercept = self.intercept
-		else
+			self._intercept = self._intercept
+		else:
+			print(self._point)
 			if(self.is_vertical()):
 				self._intercept = 'dne'
 			else:		
 				self._intercept = self._point[1]-self._slope*self._point[0]
 
+
+	def set_point(self):
+		if(self._point):
+			if(self._slope != 'inf'):
+				self._point = [0, self._intercept]
+			else:
+				self._point = [self._point[0], 0]
+
+	def get_slope(self):
+		return self._slope
+
+	def get_intercept(self):
+		return self._intercept
+	def get_point(self):
+		return self._point
 	def calc_x(self, x):
 		if(self.is_vertical()):
-			if(x == self._pont[0]):
+			if(x == self._point[0]):
 				return x
 			else:
 				raise('CalcError')
@@ -54,31 +71,40 @@ class Line:
 			return (self._slope*x+self._intercept)
 
 	def calc_intersection(self, line):
-		if(self.is_vertical() and line.is_vertical):
-			if(self._point[0] != line._pont[0])
+		if(self.is_vertical() and line.is_vertical()):
+			if(self._point[0] != line._point[0]):
 				raise('CalcError')
 			else:
 				return line._point
 		elif(self.is_vertical()):
-			x = line.calc_x(self._point[0])
+			return([self._point[0], line.calc_x(self._point[0])])
+		elif(line.is_vertical()):
+			return([line._point[0], self.calc_x(line._point[0])])
 		else:
-			return
+			x = (self._intercept-line._intercept)/(line._slope-self._slope)
+			y = self.calc_x(x)
+			return [x,y]
 
 class LineSegment:
-	def __init__(self, slope = False, line = False, point = False, intercept = False, domain = False, reference_lines = False):
+	def __init__(self, slope = False, line = False, point = False, intercept = False, domain = False, reference_lines = False, seg_range = False):
 		self.line = line
 		self.domain = domain
+		self.seg_range = seg_range
+
 		try:
 			self.is_valid_line_segment(reference_lines)
 		except:
 			print("Not Enough Data To Construct a Line Segment")
 			raise
 		self.set_line(slope, point, intercept)
-		self.set_domain(reference_lines)
+		self.set_domain_range(reference_lines)
 
 	def is_valid_line_segment(self, reference_lines):
 		if((not(self.line) and not(self.slope and (self.point or self.intercept))) or (not(self.domain) and not(reference_lines))):
 			raise NameError('LineError')
+
+	def is_vertical(self):
+		return self.line.is_vertical()
 
 	def set_line(self, slope, point, intercept):
 		if(not(self.line)):
@@ -86,22 +112,49 @@ class LineSegment:
 		else:
 			return
 
-	def set_domain(self, reference_lines):
+	def set_domain_range(self, reference_lines):
 		if(not(self.domain)):
-			slope = self.line.slope
-			intercept = self.line.intercept
-			slope_1 = reference_lines[0].slope
-			slope_2 = reference_lines[1].slope
-			intercept_1 = reference_lines[0].intercept
-			intercept_2 = reference_lines[1].intercept
-			x_1 = (intercept_1-intercept)/(slope-slope_1)
-			x_2 = (intercept_2-intercept)/(slope-slope_2)
-			if x_1 > x_2:
-				self.domain = [x_2, x_1]
+			p_1 = self.line.calc_intersection(reference_lines[0])
+			p_2 = self.line.calc_intersection(reference_lines[1])
+			if(p_1[0] > p_2[0]):
+				self.domain = [p_2[0], p_1[0]]
 			else:
-				self.domain = [x_1, x_2]
+				self.domain = [p_1[0], p_2[0]]
+			if(p_1[1] > p_2[1]):
+				self.seg_range = [p_2[1], p_1[1]]
+			else:
+				self.seg_range = [p_1[1], p_2[1]]
+
+	def print_line_segment(self, num_posts = False):
+		plot = []
+		if(num_posts == False):
+			num_posts = 1000
+		plot.append(self.print_x(num_posts))
+		plot.append(self.print_y(num_posts, plot[0]))
+		return plot
+
+	def print_x(self, num_posts):
+		plot_x = []
+		post_size = (self.domain[1]-self.domain[0])/num_posts
+		if(self.is_vertical()):
+			for i in range(num_posts):
+				plot_x.append(self.line.get_point()[0])
 		else:
-			return
+			for i in range(num_posts):
+				x = self.domain[0] + post_size*i
+				plot_x.append(x)
+		return plot_x
+
+	def print_y(self, num_posts, x_values):
+		plot_y = []
+		post_size = (self.seg_range[1]-self.seg_range[0])/num_posts
+		for i in range(num_posts):
+			y = self.seg_range[0]+post_size*i
+			plot_y.append(y)
+		if(self.line.get_slope() != 'inf' and self.line.get_slope() < 0):
+			plot_y.reverse()
+		return plot_y
+		
 
 class NGram:
 	def __init__(self, side_size, rotation, center, sides):
@@ -124,9 +177,9 @@ class NGram:
 		size = self.side_size
 		sides = self.sides
 		rotation = self.rotation
-		delta_theta = self.get_delta_theta()
+		delta_theta = self._get_delta_theta()
 		offset = self.center
-		first_vertex = self.get_first_vertex()
+		first_vertex = self._get_first_vertex()
 		if rotation != 0:
 			v_x = first_vertex[0]
 			v_y = first_vertex[1]
@@ -143,7 +196,7 @@ class NGram:
 		self.hex_verts = hex_verts
 
 	def set_line_segments(self):
-		lines = self.get_lines()
+		lines = self._get_lines()
 		line_segments = []
 		for i in range(self.sides):
 			ref_lines = [lines[(self.sides+i-2)%self.sides], lines[(i+2)%self.sides]]
@@ -164,45 +217,34 @@ class NGram:
 				slopes.append(slope)
 		return slopes
 
-	def get_lines(self):
+	def _get_lines(self):
 		slopes = self.get_slopes()
 		lines = []
 		for i in range(self.sides):
 			lines.append(Line(slopes[i], self.hex_verts[i]))
 		return lines
 
-
-	def get_delta_theta(self):
+ 
+	def _get_delta_theta(self):
 		return (pi-self.interior_angles)
 
-	def get_first_vertex(self):
+	def _get_first_vertex(self):
 		first_x = self.center[0]-(self.side_size/2)
 		first_y = self.center[1]-self.side_size*np.tan(self.interior_angles/2)/2
-		return[first_x,first_y]
+		return[np.round(first_x, 4),first_y]
 
-
-def print_line_segment(line_segment):
-	x_list = []
-	y_list = []
-	x_min = line_segment.domain[0]
-	x_max = line_segment.domain[1]
-
-	num_of_posts = 1000
-	size_of_posts = (x_max-x_min)/1000
-
-	for i in range(1000):
-		x = x_min+i*size_of_posts
-		y = line_segment.line.calc_x(x)
-		x_list.append(x)
-		y_list.append(y)
-
-	plt.plot(x_list, y_list)
+	def print_ngram(self, num_posts = 1000):
+		ngram_plot = []
+		for i in range(self.sides):
+			seg_plot = self.line_segments[i].print_line_segment(num_posts)
+			ngram_plot.append(seg_plot)
+		return ngram_plot
 
 def main():
-	test_hex = NGram(3, pi, [0,0], 5)
-	for i in range(5):
-		print_line_segment(test_hex.line_segments[i])
-	
+	test_hex = NGram(3, 0, [0,0], 16)
+	ngram_plot = test_hex.print_ngram()
+	for i in range(16):
+		plt.plot(ngram_plot[i][0], ngram_plot[i][1])
 	plt.show()
 
 if __name__ == "__main__":
