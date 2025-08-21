@@ -34,8 +34,6 @@ def read_sdf(file_path):
 arr = read_sdf("_grid_count_data.sdf")
 dir_arr = []
 
-#for i in arr:
-#	for j in i:
 for i in range (3):
 	for j in range(3):
 		dir_vec = [i%3-1,j-1]
